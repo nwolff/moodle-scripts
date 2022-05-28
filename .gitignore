@@ -1,0 +1,14 @@
+# All types of virtualenvs
+.direnv/
+.venv/
+.env/
+
+# Always
+__pycache__/
+
+# IDEs
+.vscode/
+.idea/
+
+# Mac
+.DS_Store
