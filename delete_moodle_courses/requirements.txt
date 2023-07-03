@@ -1,0 +1,5 @@
+python-dotenv
+requests
+munch
+structlog
+progressbar2

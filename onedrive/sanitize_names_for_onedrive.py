@@ -25,7 +25,6 @@ def sanitize_filenames(root):
 
     # Walk bottom-up because renaming files before renaming the enclosing directory seems safer than the opposite
     for dirpath, dirnames, filenames in os.walk(root, topdown=False):
-
         # Avoid sanitized name collision which would result in loss of files
         sanitized_names_in_dir = []
 
