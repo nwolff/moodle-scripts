@@ -1,0 +1,4 @@
+operation,method,shortname,metacohort,disabled,role
+add,cohort,2324_1M06_Anglais,2324_1M06,0,student
+add,cohort,2324_1M06_Chimie,2324_1M06,0,student
+add,cohort,2324_1MOSAV1_Arts_visuels,2324_1MOSAV1,0,student
