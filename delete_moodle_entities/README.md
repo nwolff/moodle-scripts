@@ -7,9 +7,15 @@ https://moodle.gymnasedebeaulieu.ch/admin/category.php?category=webservicesettin
 
 ## Un rôle spécifique `webservice role`
 
+https://moodle.gymnasedebeaulieu.ch/admin/roles/manage.php
+
 Le rôle webservice doit avoir les capabilités :
 * moodle/course:viewhiddencourses pour pouvoir lister les cours cachés et obtenir leur id pour pouvoir les supprimer
 * moodle/course:view pour pouvoir supprimer des cours dont l'utilisateur webservice n'est pas membre 
+* moodle/cohort:view pour voir les cohortes systèmes
+* moodle/cohort:manage pour supprimer les cohortes
+
+
 
 ## Un utilisateur spécifique `webservice user`
 
@@ -21,7 +27,9 @@ Assigner le rôle `webservice role` à cet utilisateur
 
 ##  Un service spécifique `admin_api` 
 
-Avec juste les fonctions dont on a besoin: `core_course_delete_courses, core_course_get_categories, core_course_get_courses_by_field`
+https://moodle.gymnasedebeaulieu.ch/admin/settings.php?section=externalservices
+
+Avec juste les fonctions dont on a besoin: `core_course_delete_courses, core_course_get_categories, core_course_get_courses_by_field, core_cohort_search_cohorts, core_cohort_delete_cohorts`
 
 Avec `webservice user` comme seul utilisateur autorisé
 
@@ -40,7 +48,8 @@ Quand on se trompe de nom de fonction webservice on obtient une erreur très bas
 
 **Note** : Le script supprime les backups de cours (supprimer les cours à la main fait la même chose).
 
-- Générer un jeton pour l'utilisateur `webservice user`
+- Générer un jeton pour l'utilisateur `webservice user`. 
+  https://moodle.gymnasedebeaulieu.ch/admin/settings.php?section=webservicetokens
 
 - Exporter une variable d'environnement TOKEN avec la valeur de ce jeton. Il est aussi possible de créer un fichier .env avec une ligne TOKEN=_la valeur du jeton_. Ce fichier sera automatiquement lu par le programme au démarrage
 

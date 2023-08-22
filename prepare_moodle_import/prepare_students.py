@@ -31,15 +31,15 @@ def transform(src: pd.DataFrame) -> pd.DataFrame:
     res["cohort1"] = prefix_year("eleves")
     res["cohort2"] = src["ElevesCursusActif::classe"].map(prefix_year)
 
-    coursesList = src["ElevesCursusActif::xenclassDiscr"].map(prefixed_courses_list)
-    max_number_of_courses = coursesList.map(len).aggregate(max)
+    courses_list = src["ElevesCursusActif::xenclassDiscr"].map(prefixed_courses_list)
+    max_number_of_courses = courses_list.map(len).max()
     if max_number_of_courses > 4:
         sys.exit(f"max number of courses is 4, we got {max_number_of_courses}")
 
-    res["cohort3"] = coursesList.map(nth_or_none(0))
-    res["cohort4"] = coursesList.map(nth_or_none(1))
-    res["cohort5"] = coursesList.map(nth_or_none(2))
-    res["cohort6"] = coursesList.map(nth_or_none(3))
+    res["cohort3"] = courses_list.map(nth_or_none(0))
+    res["cohort4"] = courses_list.map(nth_or_none(1))
+    res["cohort5"] = courses_list.map(nth_or_none(2))
+    res["cohort6"] = courses_list.map(nth_or_none(3))
 
     return res
 

@@ -15,7 +15,7 @@ import dotenv
 import progressbar
 import structlog
 
-from lib.moodleclient import MoodleClient
+from lib.moodle import MoodleClient
 
 URL = "https://moodle.gymnasedebeaulieu.ch/webservice/rest/server.php"
 
@@ -38,6 +38,10 @@ def delete_moodle_courses(moodle, category_id):
         )
         courses_to_delete.extend(courses_in_category.courses)
 
+    if not courses_to_delete:
+        print("No courses found, nothing to do")
+        return
+
     for i, course in enumerate(courses_to_delete):
         log.info(
             "course",
@@ -54,8 +58,8 @@ def delete_moodle_courses(moodle, category_id):
         print("Aborting")
         return
 
-    # We delete the courses one by one even though the API can take more than one course id.
-    # This is because we are weary of the php script time limit.
+    # We delete the courses one by one even though the API can do many at a
+    # time. This is because we are weary of the php script time limit.
     for course in progressbar.progressbar(courses_to_delete):
         log.info("deleting course", course=course.shortname)
         result = moodle("core_course_delete_courses", courseids=[course.id])
@@ -64,11 +68,10 @@ def delete_moodle_courses(moodle, category_id):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Recursively deletes all moodle courses living under a given category"
+        description="Deletes all moodle courses living under a given category"
     )
     parser.add_argument(
         "category_id",
-        metavar="CATEGORY_ID",
         help="The root category containing the courses to delete",
     )
     args = parser.parse_args()
