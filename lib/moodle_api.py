@@ -1,3 +1,4 @@
+# ruff: noqa: ANN001 ANN003 ANN101 ANN204
 import requests
 from munch import munchify
 
@@ -5,9 +6,11 @@ from munch import munchify
 Didn't find a good library that covers our needs to connect to moodle from python.
 
 I ended up borrowing some of the code from  https://github.com/mrcinv/moodle_api.py
-and wrapped it into a class that contains the configuration, and added the munchify 
+and wrapped it into a class that contains the configuration, and added the munchify
 convenience to it.
 """
+
+URL = "https://moodle.gymnasedebeaulieu.ch/webservice/rest/server.php"
 
 
 def rest_api_parameters(in_args, prefix="", out_dict=None):
