@@ -1,7 +1,9 @@
 # All types of virtualenvs
 .direnv/
 .venv/
-.env/
+
+# Configuration files that may contain secrets
+.env
 
 # Always
 __pycache__/
@@ -12,3 +14,6 @@ __pycache__/
 
 # Mac
 .DS_Store
+
+# For files we need but don't want it git
+local/

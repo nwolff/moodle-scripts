@@ -1,0 +1,9 @@
+-r requirements.txt
+
+# ruff format and ruff check
+ruff
+
+mypy
+pandas-stubs
+types-requests
+munch-stubs

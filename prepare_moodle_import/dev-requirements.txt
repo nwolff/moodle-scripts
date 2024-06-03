@@ -1,7 +1,0 @@
--r requirements.txt
-
-black
-isort
-ruff
-mypy
-pandas-stubs

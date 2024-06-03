@@ -2,10 +2,12 @@
 
 """
 Deletes all cohorts that start with a given prefix.
-The prefix should be something like "2223_".
-Does a 100 at a time, so you may need to run this script more than once.
+The prefix should be something like "2324_".
+Does 100 at a time, so you may need to run this script more than once.
 
 We need this script because there is no bulk cohort delete in the moodle admin interface
+
+Uses the Moodle API
 """
 
 import argparse
@@ -15,14 +17,12 @@ import sys
 import dotenv
 import structlog
 
-from lib.moodle import MoodleClient
-
-URL = "https://moodle.gymnasedebeaulieu.ch/webservice/rest/server.php"
+from lib.moodle_api import URL, MoodleClient
 
 log = structlog.get_logger()
 
 
-def delete_moodle_cohorts_with_prefix(moodle, prefix):
+def delete_moodle_cohorts_with_prefix(moodle: MoodleClient, prefix: str):
     result = moodle(
         "core_cohort_search_cohorts",
         query=prefix,
@@ -50,7 +50,7 @@ def delete_moodle_cohorts_with_prefix(moodle, prefix):
     )
     if user_input.lower() != "yes":
         print("Aborting")
-        return
+        sys.exit(0)
 
     cohort_ids_to_delete = [cohort.id for cohort in cohorts_to_delete]
     moodle("core_cohort_delete_cohorts", cohortids=cohort_ids_to_delete)
@@ -59,7 +59,7 @@ def delete_moodle_cohorts_with_prefix(moodle, prefix):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Deletes all moodle cohorts that start with a prefix"
+        description="Deletes 100 moodle cohorts that start with a prefix"
     )
     parser.add_argument("prefix")
     args = parser.parse_args()

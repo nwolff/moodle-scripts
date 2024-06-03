@@ -3,8 +3,13 @@
 """
 Recursively deletes courses under a given category.
 
-We need this script because doing so manually for a large number 
+**Warning** Course backups are deleted with the courses
+(deleting a course manually does the same thing)
+
+We need this script because doing so manually for a large number
 of courses just hangs.
+
+Uses the Moodle API
 """
 
 import argparse
@@ -15,14 +20,12 @@ import dotenv
 import progressbar
 import structlog
 
-from lib.moodle import MoodleClient
-
-URL = "https://moodle.gymnasedebeaulieu.ch/webservice/rest/server.php"
+from lib.moodle_api import URL, MoodleClient
 
 log = structlog.get_logger()
 
 
-def delete_moodle_courses(moodle, category_id):
+def delete_moodle_courses(moodle: MoodleClient, category_id: str):
     categories_to_delete = moodle(
         "core_course_get_categories", criteria=[{"key": "id", "value": category_id}]
     )
