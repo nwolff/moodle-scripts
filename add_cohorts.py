@@ -11,8 +11,9 @@ https://moodle.gymnasedebeaulieu.ch/course/management.php
 
 
 This script replaces an older script that generated a file that could be imported with
-Administration du site -> Utilisateur -> Cohortes -> Déposer les cohortes
-because that admin page choked as soon as a cohort in the file already exists
+Administration du site -> Utilisateur -> Cohortes -> Déposer les cohortes.
+That technique prevented us from synchronizing cohorts more than once, becuse that
+admin page choked as soon as a cohort in the file already existed in Moodle.
 """
 
 import argparse

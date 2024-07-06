@@ -4,7 +4,8 @@
 Takes an essaim export of teachers and courses that looks like this:
 (Note that the first 4 lines are for teacher "Bob Mould")
 
-Maitre::sigle   Maitre::wnom	Maitre::wprenom	    Maitre::prenomUsuel     Maitre::wemail	        EnseignementProchain::wNoCoursLDAP
+Maitre::sigle   Maitre::wnom	Maitre::wprenom	    Maitre::prenomUsuel     Maitre::wemail	        EnseignementProchain::wNoCoursLDAP Or
+                                                                                                    EnseignementActuel::wNoCoursLDAP
 
 Mob             Mould	        Bob	                B                       bmould@school.ch	    2324_3M08_Mathématiques_(niveau_standard)
 NULL            NULL	        NULL	            NULL                    NULL	                2324_2M02_Physique
@@ -47,7 +48,6 @@ TEACHER_TLA = "teacher_tla"
 TEACHER_LASTNAME = "teacher_lastname"
 TEACHER_FIRSTNAME = "teacher_firstname"
 TEACHER_EMAIL = "teacher_email"
-TEACHER_PEDAGO_LOGIN = "teacher_pedago_login"
 CLASS = "class"
 COURSE = "course"
 COURSE_SHORTNAME = "shortname"
@@ -60,7 +60,6 @@ ALL_FIELDS = [
     TEACHER_LASTNAME,
     TEACHER_FIRSTNAME,
     TEACHER_EMAIL,
-    TEACHER_PEDAGO_LOGIN,
     CLASS,
     COURSE,
     COURSE_SHORTNAME,
@@ -70,7 +69,7 @@ ALL_FIELDS = [
 ]
 
 
-def preprocess(src: pd.DataFrame, login_and_email: pd.DataFrame) -> pd.DataFrame:
+def preprocess(src: pd.DataFrame) -> pd.DataFrame:
     log.info(
         "start",
         number_of_courses=len(src),
@@ -110,21 +109,18 @@ def preprocess(src: pd.DataFrame, login_and_email: pd.DataFrame) -> pd.DataFrame
     log.info("done unfolding", unfolded_size=len(res))
 
     ###
-    # Merge-in the pedago login
-    ###
-
-    # Data in essaim is dirty, there are many lines without a sigle
-    login_and_email = login_and_email.dropna(subset=["Maitres::wsigle"])
-    res = res.join(login_and_email.set_index("Maitres::wsigle"), on=TEACHER_TLA)
-    res = res.rename(columns={"pedagoLogin": TEACHER_PEDAGO_LOGIN})
-    log.info("done merging login and email info", merged_size=len(res))
-
-    ###
     # Unpack course and class information
     ###
-    split_course_info = src["EnseignementProchain::wNoCoursLDAP"].str.split(
-        "_", n=2, expand=True
-    )
+
+    # First find out in which column the data lives.
+    # Before "la bascule de l'année" it's in EnseignementProchain::wNoCoursLDAP,
+    # afterwards in EnseignementActuel::wNoCoursLDAP
+    course_column = None
+    if "EnseignementProchain::wNoCoursLDAP" in src.columns:
+        course_column = "EnseignementProchain::wNoCoursLDAP"
+    else:
+        course_column = "EnseignementActuel::wNoCoursLDAP"
+    split_course_info = src[course_column].str.split("_", n=2, expand=True)
     res[[CLASS, COURSE]] = split_course_info.drop(0, axis="columns")
 
     ###
@@ -246,11 +242,9 @@ def course_to_category(s: str) -> str:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("teachers_and_courses")
-    parser.add_argument("login_and_email")
     parser.add_argument("output")
     args = parser.parse_args()
 
     teachers_and_courses = read_excel(args.teachers_and_courses)
-    login_and_email = read_excel(args.login_and_email)
-    output = preprocess(src=teachers_and_courses, login_and_email=login_and_email)
+    output = preprocess(teachers_and_courses)
     write_csv(output, args.output)

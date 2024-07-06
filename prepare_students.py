@@ -3,9 +3,9 @@
 """
 Takes an essaim export of students that looks like this:
 
-adcMail                 eleveUserName       weleveNomUsuel      welevePrenomUsuel       ElevesCursusActif::classe  ElevesCursusActif::xenclassDiscr
-h.muster@eduvaud.ch     hmuster             MUSTER              Hans                    3M05                       3MAL4 - An - NR - 3MOSPM2 - 3MOCMU1 - TM
-j.ballard@eduvaud.ch    jballard            BALLARD             Justine                 3CCI1                      3CAL3 - 3CALOCI1 - CI
+adcMail                 weleveNomUsuel      welevePrenomUsuel       ElevesCursusActif::classe  ElevesCursusActif::xenclassDiscr
+h.muster@eduvaud.ch     MUSTER              Hans                    3M05                       3MAL4 - An - NR - 3MOSPM2 - 3MOCMU1 - TM
+j.ballard@eduvaud.ch    BALLARD             Justine                 3CCI1                      3CAL3 - 3CALOCI1 - CI
 
 Outputs a file ready for importing into Moodle : admin->users->import users
 
@@ -35,8 +35,13 @@ def transform(moodle: MoodleClient, src: pd.DataFrame) -> pd.DataFrame:
 
     # Some students don't have an email address (yet),
     # so we can't create their moodle account
-    src = src.dropna(subset=["adcMail"])
-    log.info("after removing students with no email", student_count=len(src))
+    students_with_no_email = src["adcMail"].isna()
+    src = src[~students_with_no_email]
+    log.info(
+        "removing students with no email",
+        missing_emails=int(students_with_no_email.sum()),
+        remaining_students=len(src),
+    )
 
     # Sanity check
     if not src["adcMail"].is_unique:
@@ -47,9 +52,9 @@ def transform(moodle: MoodleClient, src: pd.DataFrame) -> pd.DataFrame:
 
     # We start with the columns that come from the source, thus creating all rows
     res["email"] = src["adcMail"]
+    res["username"] = src["adcMail"].str.lower()
     res["firstname"] = src["welevePrenomUsuel"]
     res["lastname"] = src["weleveNomUsuel"]
-    res["username"] = src["eleveUserName"]
 
     res["password"] = [random_moodle_password() for _ in range(len(res))]
 
@@ -80,8 +85,6 @@ def transform(moodle: MoodleClient, src: pd.DataFrame) -> pd.DataFrame:
 
     # Compact the columns of each row so that the NAs are squeezed-out
     courses = courses.apply(lambda x: pd.Series(x.dropna().values), axis=1)
-
-    # log.info("kept courses", courses = pd.unique(courses.values.flatten()))
 
     # Build cohorts from the courses
     course_cohorts = YEAR_PREFIX + courses

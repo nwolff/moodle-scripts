@@ -19,7 +19,6 @@ from preprocess_teachers_and_courses import (
     TEACHER_EMAIL,
     TEACHER_FIRSTNAME,
     TEACHER_LASTNAME,
-    TEACHER_PEDAGO_LOGIN,
     TEACHER_TLA,
 )
 
@@ -35,7 +34,6 @@ def to_teachers_with_courses(src: pd.DataFrame) -> pd.DataFrame:
             TEACHER_LASTNAME: pd.Series.min,
             TEACHER_FIRSTNAME: pd.Series.min,
             TEACHER_EMAIL: pd.Series.min,
-            TEACHER_PEDAGO_LOGIN: pd.Series.min,
             COURSE_SHORTNAME: pd.Series.tolist,
         }
     )
@@ -59,12 +57,7 @@ def to_teachers_with_courses(src: pd.DataFrame) -> pd.DataFrame:
 
     res["cohort1"] = 1  #  Enseignants au gymnase de Beaulieu
 
-    # XXX: Sometimes is this, sometimes is that
-    # res["username"] = res[TEACHER_EMAIL]
-    res["username"] = res[TEACHER_PEDAGO_LOGIN]
-
-    res = res.drop(columns=[TEACHER_PEDAGO_LOGIN])
-
+    res["username"] = res[TEACHER_EMAIL]
     res = res.sort_values([TEACHER_LASTNAME, TEACHER_FIRSTNAME])
 
     res["password"] = [random_moodle_password() for _ in range(len(res))]
