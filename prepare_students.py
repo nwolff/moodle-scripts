@@ -9,7 +9,8 @@ j.ballard@eduvaud.ch    BALLARD             Justine                 3CCI1       
 
 Outputs a file ready for importing into Moodle : admin->users->import users
 
-Uses the Moodle API to retrieve the list of cohorts.
+Uses the Moodle API to retrieve the list of existing cohorts and filters courses that don't have a matching cohort.
+This implies YOU MUST ADD COHORTS BEFORE RUNNING THIS SCRIPT.
 """
 
 import argparse
@@ -36,12 +37,18 @@ def transform(moodle: MoodleClient, src: pd.DataFrame) -> pd.DataFrame:
     # Some students don't have an email address (yet),
     # so we can't create their moodle account
     students_with_no_email = src["adcMail"].isna()
-    src = src[~students_with_no_email]
+    missing_email_count = int(students_with_no_email.sum())
     log.info(
         "removing students with no email",
-        missing_emails=int(students_with_no_email.sum()),
-        remaining_students=len(src),
+        missing_email_count=missing_email_count,
     )
+    if missing_email_count:
+        print(
+            src[students_with_no_email][
+                ["weleveNomUsuel", "welevePrenomUsuel", "ElevesCursusActif::classe"]
+            ].to_string(index=False, header=False)
+        )
+        src = src[~students_with_no_email]
 
     # Sanity check
     if not src["adcMail"].is_unique:
@@ -108,7 +115,7 @@ def fetch_existing_moodle_cohorts(moodle: MoodleClient) -> set[str]:
         limitnum=10000,
     )
     cohorts = {c.name for c in result.cohorts}
-    log.info("fetched all cohorts from moodle", cohorts=len(cohorts))
+    log.info("fetched all cohorts from moodle", cohort_count=len(cohorts))
     return cohorts
 
 
