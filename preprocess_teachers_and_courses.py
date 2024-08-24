@@ -162,6 +162,9 @@ def preprocess(src: pd.DataFrame) -> pd.DataFrame:
     ]
     dedupe = dupes[dupes[COURSE] == "Bureautique"]
     res.loc[dedupe.index, CLASS] += res[TEACHER_TLA]
+    res.loc[dedupe.index, COURSE_COHORT] = (
+        ""  # We don't want to create cohorts for these courses, because essaim does not know their composition.
+    )
     print(res.loc[dedupe.index].sort_values([CLASS])[[TEACHER_TLA, CLASS, COURSE]])
     log.info(
         "done splitting Bureautique courses shared between teachers",
@@ -194,7 +197,9 @@ def preprocess(src: pd.DataFrame) -> pd.DataFrame:
         + res[COURSE].map(course_to_category)
     )
 
-    res[COURSE_COHORT] = f"{schoolyear.START_YY}{schoolyear.END_YY}" + "_" + res[CLASS]
+    res.loc[res[COURSE_COHORT].isna(), COURSE_COHORT] = (
+        f"{schoolyear.START_YY}{schoolyear.END_YY}" + "_" + res[CLASS]
+    )
 
     ###
     # Remove temporary fields

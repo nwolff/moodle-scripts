@@ -32,7 +32,7 @@ log = structlog.get_logger()
 
 
 def add_cohorts(moodle: MoodleClient, course_category_id: str, src: pd.DataFrame):
-    wanted = set(src[COURSE_COHORT])
+    wanted = set(src[COURSE_COHORT].dropna())
     log.info("wanted cohorts", count=len(wanted))
 
     result = moodle(
