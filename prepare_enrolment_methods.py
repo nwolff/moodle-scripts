@@ -16,6 +16,8 @@ from preprocess_teachers_and_courses import COURSE_COHORT, COURSE_SHORTNAME
 
 
 def to_enrollment_methods(src: pd.DataFrame) -> pd.DataFrame:
+    src = src[src[COURSE_COHORT].notna()]
+
     res = pd.DataFrame()
 
     # We start with the columns that come from the source, thus creating all rows
