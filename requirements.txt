@@ -1,5 +1,6 @@
-pandas
 polars
+fastexcel
+pandas
 openpyxl
 
 python-dotenv

@@ -18,7 +18,7 @@ import os
 import sys
 
 import dotenv
-import pandas as pd
+import polars as pl
 import structlog
 
 from lib.io import read_excel, write_csv
@@ -31,12 +31,12 @@ log = structlog.get_logger()
 YEAR_PREFIX = f"{START_YY}{END_YY}_"
 
 
-def transform(moodle: MoodleClient, src: pd.DataFrame) -> pd.DataFrame:
+def transform(moodle: MoodleClient, src: pl.DataFrame) -> pl.DataFrame:
     log.info("start", student_count=len(src))
 
     # Some students don't have an email address (yet),
     # so we can't create their moodle account
-    students_with_no_email = src["adcMail"].isna()
+    students_with_no_email = src["adcMail"].is_null()
     missing_email_count = int(students_with_no_email.sum())
     log.info(
         "removing students with no email",
@@ -44,32 +44,30 @@ def transform(moodle: MoodleClient, src: pd.DataFrame) -> pd.DataFrame:
     )
     if missing_email_count:
         print(
-            src[students_with_no_email][
-                ["weleveNomUsuel", "welevePrenomUsuel", "ElevesCursusActif::classe"]
-            ].to_string(index=False, header=False)
+            src.filter(students_with_no_email).with_columns(
+                "weleveNomUsuel", "welevePrenomUsuel", "ElevesCursusActif::classe"
+            )
         )
-        src = src[~students_with_no_email]
+        src = src.filter(~students_with_no_email)
 
     # Sanity check
-    if not src["adcMail"].is_unique:
-        print(src[src.duplicated()])
-        sys.exit("Found duplicate emails in file. Exiting")
+    duplicate_emails = src["adcMail"].is_duplicated()
+    if duplicate_emails.any():
+        print("Found duplicates emails: ")
+        print(src.filter(duplicate_emails))
+        sys.exit("Exiting")
 
-    res = pd.DataFrame()
+    res = pl.DataFrame().with_columns(
+        src["adcMail"].alias("email"),
+        src["adcMail"].str.to_lowercase().alias("username"),
+        src["welevePrenomUsuel"].alias("firstname"),
+        src["weleveNomUsuel"].alias("lastname"),
+        # XXX res["password"] = [random_moodle_password() for _ in range(len(res))]
+        pl.lit(YEAR_PREFIX + "eleves").alias("cohort1"),
+        pl.lit(YEAR_PREFIX) + src["ElevesCursusActif::classe"].alias("cohort2"),
+    )
 
-    # We start with the columns that come from the source, thus creating all rows
-    res["email"] = src["adcMail"]
-    res["username"] = src["adcMail"].str.lower()
-    res["firstname"] = src["welevePrenomUsuel"]
-    res["lastname"] = src["weleveNomUsuel"]
-
-    res["password"] = [random_moodle_password() for _ in range(len(res))]
-
-    # Every student gets this cohort
-    res["cohort1"] = YEAR_PREFIX + "eleves"
-
-    # One for the class
-    res["cohort2"] = YEAR_PREFIX + src["ElevesCursusActif::classe"]
+    print(res)  # XXX
 
     #
     # Cohorts based on courses (options).
@@ -132,6 +130,6 @@ if __name__ == "__main__":
     log.info("connecting", url=URL)
     moodle = MoodleClient(URL, token)
 
-    essaim_students = read_excel(args.essaim_students)
+    essaim_students = pl.read_excel(args.essaim_students)
     transformed = transform(moodle, essaim_students)
-    write_csv(transformed, args.moodle_students)
+    transformed.write_csv(args.moodle_students)
