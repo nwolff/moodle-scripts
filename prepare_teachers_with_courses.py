@@ -48,7 +48,7 @@ def to_teachers_with_courses(src: pd.DataFrame) -> pd.DataFrame:
 
     # Type 2 to make users teachers for their courses
     for i in range(len(list(courses))):
-        res[f"type{i+1}"] = 2
+        res[f"type{i + 1}"] = 2
 
     ###
     # Final formatting

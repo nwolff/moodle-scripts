@@ -97,7 +97,7 @@ def transform(moodle: MoodleClient, src: pd.DataFrame) -> pd.DataFrame:
     course_cohorts = YEAR_PREFIX + courses
 
     # Assign proper names to these columns, starting with "cohort3"
-    course_cohorts = course_cohorts.rename(lambda i: f"cohort{i+3}", axis=1)
+    course_cohorts = course_cohorts.rename(lambda i: f"cohort{i + 3}", axis=1)
 
     res = pd.concat((res, course_cohorts), axis=1)
     log.info("done", student_count=len(res))
