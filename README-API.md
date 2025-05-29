@@ -42,7 +42,9 @@ https://moodle.gymnasedebeaulieu.ch/admin/settings.php?section=webservicetokens
 - Chercher l'utilisateur en ordonnant par prénom décroissant pour trouver "webservice" après quelques pages
 
 Exporter une variable d'environnement TOKEN avec la valeur de ce jeton.
-Il est aussi possible de créer un fichier .env avec une ligne TOKEN=_la valeur du jeton_. Ce fichier sera automatiquement lu par le programme au démarrage
+
+Il est aussi possible de créer un fichier .env avec une ligne TOKEN=_la valeur du jeton_.
+Ce fichier sera automatiquement lu par le programme au démarrage
 
 # Utilisation
 

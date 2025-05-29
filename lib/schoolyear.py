@@ -1,5 +1,5 @@
 # XXX. Change this every year
-START_YYYY = 2024
+START_YYYY = 2025
 
 END_YYYY = START_YYYY + 1
 

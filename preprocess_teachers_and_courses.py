@@ -2,7 +2,7 @@
 
 """
 Takes an essaim export of teachers and courses that looks like this:
-(Note that the first 4 lines are for teacher "Bob Mould")
+(Note that the first 4 lines are for teacher "Mob", the last two ones for "ZZn")
 
 Maitre::sigle   Maitre::wnom	Maitre::wprenom	    Maitre::prenomUsuel     Maitre::wemail	        EnseignementProchain::wNoCoursLDAP Or
                                                                                                     EnseignementActuel::wNoCoursLDAP
@@ -15,23 +15,18 @@ Zzn             ZZ_Name	        NULL	            NULL                    NULL	  
 NULL            NULL	        NULL	            NULL                    NULL	                2324_2CSA2_Sport
 
 
-Also takes an essaim export that associates the teachers sigle with their pédago login.
-The sigle is the primary key for teachers in essaim.
-
-
-Generates a file that is be used by the other tools.
-Constants with the column names are also exported by this file,
-to avoid to avoid typos when accessing them
-
-All business rules are encapsulated here :
+All business rules are implemented here:
 - How the teacher's first name is built from the name and usual name
-- The rules for classes and courses that don't get a matching entity in Moodle
+- The rules for classes and courses that wont become something in Moodle
+- The way courses with multiple teachers are mapped to moodle courses:
+    - Either they become two separate courses (when the class is split in two all the time)
+    - Or they become a single moodle course with two teachers.
 - The classification of courses into categories
 - The precise naming conventions for courses, categories, and cohorts
-- The fact that we delete duplicate courses for a single teacher. These duplicates
- in the input means the class is split into half-class groups, we assume the
- teacher only needs a single Moodle course for both groups
- - The way we select which duplicate courses to split into one course per teacher
+
+
+All other tools feed from the output of this file, using the column names defined in ALL_FIELDS to access information
+
 """
 
 import argparse
@@ -72,14 +67,14 @@ ALL_FIELDS = [
 def preprocess(src: pd.DataFrame) -> pd.DataFrame:
     log.info(
         "start",
-        number_of_courses=len(src),
+        num_courses=len(src),
         unique_teachers=len(src["Maitre::wnom"].unique()),
     )
 
     res = pd.DataFrame()
 
     ###
-    # Start with the teacher info.
+    # 1. Start with the teacher info.
     ###
 
     res[[TEACHER_TLA, TEACHER_LASTNAME, TEACHER_EMAIL]] = src[
@@ -106,10 +101,8 @@ def preprocess(src: pd.DataFrame) -> pd.DataFrame:
             last_firstname = row[TEACHER_FIRSTNAME]
             last_email = row[TEACHER_EMAIL]
 
-    log.info("done unfolding", unfolded_size=len(res))
-
     ###
-    # Unpack course and class information
+    # 2. Unpack course and class information
     ###
 
     # First find out in which column the data lives.
@@ -120,59 +113,65 @@ def preprocess(src: pd.DataFrame) -> pd.DataFrame:
         course_column = "EnseignementProchain::wNoCoursLDAP"
     else:
         course_column = "EnseignementActuel::wNoCoursLDAP"
+
     split_course_info = src[course_column].str.split("_", n=2, expand=True)
     res[[CLASS, COURSE]] = split_course_info.drop(0, axis="columns")
 
     ###
-    # Remove lines that won't become a course in Moodle
+    # 3. Remove lines that won't become a course in Moodle
     ###
 
-    # Courses
     res = res.dropna(subset=[COURSE])
     log.info("done removing empty courses", num_courses=len(res))
 
     res = res[~res[COURSE].str.contains("Travail_personnel")]
-    log.info("done removing courses containing Travail_personnel", num_courses=len(res))
+    log.info(
+        "done removing courses containing 'Travail_personnel'", num_courses=len(res)
+    )
 
     res = res[~(res[COURSE] == "Éducation_physique")]
     log.info("done removing 'Éducation_physique' courses", num_courses=len(res))
 
-    # Classes
+    # TM* Classes don't need a course.
     res = res[~res[CLASS].str.startswith("TM")]
     log.info("done removing courses for TM* classes", num_courses=len(res))
 
-    # Teachers
+    # ZZ is a marker for when we don't know who will be giving a class.
+    # We don't create a course in moodle for those.
     res = res[~res[TEACHER_LASTNAME].str.startswith("ZZ")]
-    log.info("done removing courses for ZZ teachers", num_courses=len(res))
+    log.info("done removing courses for ZZ* teachers", num_courses=len(res))
 
-    ###
     # Remove duplicate courses for a teacher
-    ###
-    log.info("removing duplicate courses for a teacher...")
-    print(res[res.duplicated()][[TEACHER_TLA, CLASS, COURSE]])
+    # These duplicates in the input appear when the class is split into half-class groups
+    # (it depends on how Emmanuel configured things in essaim, sometimes we get these duplicates, sometimes we don't)
+    # We assume the teacher only wants a single Moodle course for both groups.
+    # log.info("removing duplicate courses for a teacher...")
+    # print(res[res.duplicated()][[TEACHER_TLA, CLASS, COURSE]])
     res = res.drop_duplicates()
     log.info("done removing duplicate courses for a teacher", num_courses=len(res))
 
     ###
-    # Split some of the courses shared between two teachers
+    # 4. Split some of the courses shared between two teachers
     ###
-    log.info("splitting Bureautique courses shared between teachers...")
-    dupes = res[res.duplicated(subset=[CLASS, COURSE], keep=False)][
+    log.info("splitting some of the courses that are shared between teachers...")
+    shared = res[res.duplicated(subset=[CLASS, COURSE], keep=False)][
         [TEACHER_TLA, CLASS, COURSE]
     ]
-    dedupe = dupes[dupes[COURSE] == "Bureautique"]
-    res.loc[dedupe.index, CLASS] += res[TEACHER_TLA]
-    res.loc[dedupe.index, COURSE_COHORT] = (
-        ""  # We don't want to create cohorts for these courses, because essaim does not know their composition.
-    )
-    print(res.loc[dedupe.index].sort_values([CLASS])[[TEACHER_TLA, CLASS, COURSE]])
-    log.info(
-        "done splitting Bureautique courses shared between teachers",
-        num_courses=len(res),
-    )
+    # print(shared)
+
+    # Only some of the shared courses get two separate moodle courses
+    split = shared[shared[COURSE].isin(("Bureautique", "Informatique"))]
+    res.loc[split.index, COURSE] += "_" + res[TEACHER_TLA]
+
+    # We don't want to create cohorts for these courses, because essaim does not know their composition.
+    # The teacher will need to manually enroll students.
+    res.loc[split.index, COURSE_COHORT] = ""
+
+    print(res.loc[split.index].sort_values([CLASS])[[TEACHER_TLA, CLASS, COURSE]])
+    print()
 
     ###
-    # Fill-in derived fields
+    # 5. Fill-in derived fields
     ###
 
     res[COURSE_SHORTNAME] = (
@@ -202,7 +201,7 @@ def preprocess(src: pd.DataFrame) -> pd.DataFrame:
     )
 
     ###
-    # Remove temporary fields
+    # 6. Remove temporary fields
     ###
     res = res[ALL_FIELDS]
 
@@ -212,7 +211,7 @@ def preprocess(src: pd.DataFrame) -> pd.DataFrame:
 def course_to_category(s: str) -> str:
     """
     We create these categories only to help
-    navigate inside the large number of courses.
+    navigate inside the large number of courses in moodle.
     """
     # Order of matches is important
     prefixes = (
@@ -232,14 +231,18 @@ def course_to_category(s: str) -> str:
         return "Mathématiques"
     if "bureautique" in s.lower():
         return "Informatique"
-    if s.startswith("A&R") or s == "Economie_et_droit" or "finance" in s.lower():
-        return "Économie_et_droit"
+    if s.startswith(("A&R", "Économie", "Economie")) or "finance" in s.lower():
+        return "Economie_et_droit"
     if s.startswith("DCO"):
         return "DCO"
     # We don't just match on "histoire" because "histoire de l'art" is in its own category
     if s == "Histoire_et_institutions_politiques":
         return "Histoire"
-    if "relig" in s or s in ("Photo", "Théâtre", "Culture_antique", "Sociologie"):
+    if (
+        "relig" in s
+        or "Trav._interdisc._centré_sur_un_proj." in s
+        or s in ("Photo", "Théâtre", "Culture_antique", "Sociologie")
+    ):
         return "Misc"
     return s
 
@@ -252,4 +255,12 @@ if __name__ == "__main__":
 
     teachers_and_courses = read_excel(args.teachers_and_courses)
     output = preprocess(teachers_and_courses)
+
+    # Dump categories to get a feel of how we classified things
+    print("Categories: ")
+    categories = output[COURSE_CATEGORY_PATH].unique()
+    categories.sort()
+    for cat in categories:
+        print(cat)
+
     write_csv(output, args.output)
