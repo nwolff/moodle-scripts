@@ -12,7 +12,7 @@ https://moodle.gymnasedebeaulieu.ch/course/management.php
 
 This script replaces an older script that generated a file that could be imported with
 Administration du site -> Utilisateur -> Cohortes -> Déposer les cohortes.
-That technique prevented us from synchronizing cohorts more than once, becuse that
+That technique prevented us from synchronizing cohorts more than once, because that
 admin page choked as soon as a cohort in the file already existed in Moodle.
 """
 
@@ -45,21 +45,21 @@ def add_cohorts(moodle: MoodleClient, course_category_id: str, src: pd.DataFrame
     )
     existing = {c.name for c in result.cohorts}
     log.info(
-        "fetched cohorts from moodle",
+        "fetched existing from moodle",
         course_category_id=course_category_id,
-        count=len(existing),
+        found=len(existing),
     )
 
-    missing = wanted - existing
+    missing = sorted(wanted - existing)
     if not missing:
-        log.info("Nothing to do")
+        log.info("nothing to do")
         sys.exit(0)
 
-    log.info("Missing cohorts", missing=missing)
+    log.info("missing cohorts", missing=missing)
 
     user_input = input(f"Do you want to create {len(missing)} cohorts (yes/no): ")
     if user_input.lower() != "yes":
-        print("Aborting")
+        print("aborting")
         sys.exit(0)
 
     data = [
@@ -68,7 +68,7 @@ def add_cohorts(moodle: MoodleClient, course_category_id: str, src: pd.DataFrame
     ]
 
     moodle("core_cohort_create_cohorts", cohorts=data)
-    log.info("Done")
+    log.info("done")
 
 
 if __name__ == "__main__":
