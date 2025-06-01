@@ -83,7 +83,7 @@ if __name__ == "__main__":
     token = os.getenv("TOKEN")
     if not token:
         sys.exit("Missing environment variable 'TOKEN'")
-    log.info("connecting", url=URL)
+    log.info("connecting", url=URL, token=token)
     moodle = MoodleClient(URL, token)
 
     delete_moodle_courses(moodle, args.category_id)

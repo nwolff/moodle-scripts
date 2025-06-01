@@ -36,10 +36,15 @@ Avec `webservice user` comme seul utilisateur autorisé
 ## Générer un jeton
 
 Générer un jeton pour l'utilisateur `webservice_user`.
-https://moodle.gymnasedebeaulieu.ch/admin/settings.php?section=webservicetokens
+https://moodle.gymnasedebeaulieu.ch/admin/webservice/tokens.php
 
 - Cliquer sur le bouton "ajouter" en bas à droite
-- Chercher l'utilisateur en ordonnant par prénom décroissant pour trouver "webservice" après quelques pages
+
+  - Utilisateur : webservice user
+  - Service : admin_api
+  - Valide jusqu'au : un an plus tard
+
+- Chercher l'utilisateur en triant par service, "admin_api" apparait en premier. Copier la valeur du jeton
 
 Exporter une variable d'environnement TOKEN avec la valeur de ce jeton.
 
