@@ -21,18 +21,17 @@ import os
 import sys
 
 import dotenv
-import pandas as pd
+import polars as pl
 import structlog
 
-from lib.io import read_csv
 from lib.moodle_api import URL, MoodleClient
 from preprocess_teachers_and_courses import COURSE_COHORT
 
 log = structlog.get_logger()
 
 
-def add_cohorts(moodle: MoodleClient, course_category_id: str, src: pd.DataFrame):
-    wanted = set(src[COURSE_COHORT].dropna())
+def add_cohorts(moodle: MoodleClient, course_category_id: str, src: pl.DataFrame):
+    wanted = set(src[COURSE_COHORT].drop_nulls())
     log.info("wanted cohorts", count=len(wanted))
 
     result = moodle(
@@ -82,8 +81,8 @@ if __name__ == "__main__":
     if not token:
         sys.exit("Missing environment variable 'TOKEN'")
 
-    log.info("connecting", url=URL)
+    log.info("connecting", url=URL, token=token)
     moodle = MoodleClient(URL, token)
 
-    preprocessed = read_csv(args.preprocessed)
+    preprocessed = pl.read_csv(args.preprocessed)
     add_cohorts(moodle, args.course_category_id, preprocessed)

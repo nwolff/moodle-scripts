@@ -2,6 +2,9 @@ Some scripts that are useful to manage Moodle.
 
 Runs on python3.9+, which is part of the mac command line developer tools that can be installed without being sudoer
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/nwolff/moodle-scripts)
+
+
 # To run the scripts
 
 ## Virtual environment

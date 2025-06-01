@@ -9,9 +9,8 @@ Admin->Cours->Modifier les cours en lots
 
 import argparse
 
-import pandas as pd
+import polars as pl
 
-from lib.io import read_csv, write_csv
 from preprocess_teachers_and_courses import (
     COURSE_CATEGORY_PATH,
     COURSE_FULLNAME,
@@ -19,10 +18,9 @@ from preprocess_teachers_and_courses import (
 )
 
 
-def to_courses(src: pd.DataFrame) -> pd.DataFrame:
-    res = src.copy()
-    res = res[[COURSE_SHORTNAME, COURSE_FULLNAME, COURSE_CATEGORY_PATH]]
-    res = res.sort_values(by=COURSE_SHORTNAME)
+def to_courses(src: pl.DataFrame) -> pl.DataFrame:
+    res = src.select([COURSE_SHORTNAME, COURSE_FULLNAME, COURSE_CATEGORY_PATH])
+    res = res.sort(by=COURSE_SHORTNAME)
     return res
 
 
@@ -32,6 +30,6 @@ if __name__ == "__main__":
     parser.add_argument("output")
     args = parser.parse_args()
 
-    preprocessed = read_csv(args.preprocessed)
+    preprocessed = pl.read_csv(args.preprocessed)
     courses = to_courses(preprocessed)
-    write_csv(courses, args.output)
+    courses.write_csv(args.output)

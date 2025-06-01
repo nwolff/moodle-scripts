@@ -19,10 +19,9 @@ import sys
 from typing import Callable
 
 import dotenv
-import pandas as pd
+import polars as pl
 import structlog
 
-from lib.io import read_excel, write_csv
 from lib.moodle_api import URL, MoodleClient
 from lib.passwords import password_generator
 from lib.schoolyear import END_YY, START_YY
@@ -33,13 +32,13 @@ YEAR_PREFIX = f"{START_YY}{END_YY}_"
 
 
 def transform(
-    src: pd.DataFrame, email_to_password: Callable[[str], str], moodle: MoodleClient
-) -> pd.DataFrame:
+    src: pl.DataFrame, email_to_password: Callable[[str], str], moodle: MoodleClient
+) -> pl.DataFrame:
     log.info("start", student_count=len(src))
 
     # Some students don't have an email address (yet),
     # so we can't create their moodle account
-    students_with_no_email = src["adcMail"].isna()
+    students_with_no_email = src["adcMail"].is_null()
     missing_email_count = int(students_with_no_email.sum())
     log.info(
         "removing students with no email",
@@ -47,63 +46,51 @@ def transform(
     )
     if missing_email_count:
         print(
-            src[students_with_no_email][
-                ["weleveNomUsuel", "welevePrenomUsuel", "ElevesCursusActif::classe"]
-            ].to_string(index=False, header=False)
+            src.filter(students_with_no_email).with_columns(
+                "weleveNomUsuel", "welevePrenomUsuel", "ElevesCursusActif::classe"
+            )
         )
-        src = src[~students_with_no_email]
+        src = src.filter(~students_with_no_email)
+        log.info("after removing missing emails", student_count=len(src))
 
     # Sanity check
-    if not src["adcMail"].is_unique:
-        print(src[src.duplicated()])
-        sys.exit("Found duplicate emails in file. Exiting")
+    duplicate_emails = src["adcMail"].is_duplicated()
+    if duplicate_emails.any():
+        print("Found duplicates emails: ")
+        print(src.filter(duplicate_emails))
+        sys.exit("Exiting")
 
-    res = pd.DataFrame()
+    # Build up most of the data
+    res = pl.DataFrame().with_columns(
+        email=src["adcMail"],
+        username=src["adcMail"].str.to_lowercase(),
+        firstname=src["welevePrenomUsuel"],
+        lastname=src["weleveNomUsuel"],
+        password=src["adcMail"].map_elements(email_to_password, return_dtype=pl.String),
+        cohort1=pl.lit(YEAR_PREFIX + "eleves"),
+        cohort2=pl.concat_str(pl.lit(YEAR_PREFIX), src["ElevesCursusActif::classe"]),
+        courses=src["ElevesCursusActif::xenclassDiscr"].str.split(" - "),
+    )
 
-    # We start with the columns that come from the source, thus creating all rows
-    res["email"] = src["adcMail"]
-    res["username"] = src["adcMail"].str.lower()
-    res["firstname"] = src["welevePrenomUsuel"]
-    res["lastname"] = src["weleveNomUsuel"]
+    # Prefix the year to the courses list
+    res = res.with_columns(pl.col("courses").list.eval(YEAR_PREFIX + pl.element()))
 
-    res["password"] = res["email"].map(email_to_password)
-
-    # Every student gets this cohort
-    res["cohort1"] = YEAR_PREFIX + "eleves"
-
-    # One for the class
-    res["cohort2"] = YEAR_PREFIX + src["ElevesCursusActif::classe"]
-
-    #
-    # Cohorts based on courses (options).
-    #
-    existing_cohorts = fetch_existing_moodle_cohorts(moodle)
-
-    # We only keep the courses for which a cohort already exists in moodle,
+    # Only keep the courses for which a cohort already exists in moodle,
     # thus filtering out all the "marker" courses the students were assigned in essaim.
-    courses = src["ElevesCursusActif::xenclassDiscr"].str.split(" - ", expand=True)
-    courses_with_matching_cohort_mask = courses.map(
-        lambda course: YEAR_PREFIX + course in existing_cohorts
-    )
-    dropped_courses = courses[~courses_with_matching_cohort_mask]
-    log.info(
-        "dropped courses without a matching cohort",
-        dropped=list(dropped_courses.melt()["value"].dropna().unique()),
+    existing_cohorts = fetch_existing_moodle_cohorts(moodle)
+    res = res.with_columns(
+        pl.col("courses").list.filter(pl.element().is_in(existing_cohorts))
     )
 
-    courses = courses[courses_with_matching_cohort_mask]
+    # Create columns starting with name "cohort3" for the remaining courses
+    res = res.with_columns(
+        pl.col("courses").list.to_struct(
+            n_field_strategy="max_width",
+            fields=lambda idx: f"cohort{idx + 3}",  # Start with cohort3
+        )
+    ).unnest("courses")
 
-    # Compact the columns of each row so that the NAs are squeezed-out
-    courses = courses.apply(lambda x: pd.Series(x.dropna().values), axis=1)
-
-    # Build cohorts from the courses
-    course_cohorts = YEAR_PREFIX + courses
-
-    # Assign proper names to these columns, starting with "cohort3"
-    course_cohorts = course_cohorts.rename(lambda i: f"cohort{i + 3}", axis=1)
-
-    res = pd.concat((res, course_cohorts), axis=1)
-    log.info("done", student_count=len(res))
+    log.info("done")
 
     return res
 
@@ -139,6 +126,6 @@ if __name__ == "__main__":
     log.info("connecting", url=URL)
     moodle = MoodleClient(URL, token)
 
-    essaim_students = read_excel(args.essaim_students)
+    essaim_students = pl.read_excel(args.essaim_students)
     transformed = transform(essaim_students, password_generator(salt), moodle)
-    write_csv(transformed, args.moodle_students)
+    transformed.write_csv(args.moodle_students)
