@@ -8,12 +8,16 @@ ready for importing into Moodle : Admin->Utilisateurs->Importation d'utilisateur
 """
 
 import argparse
+import os
+import sys
 from itertools import zip_longest
+from typing import Callable
 
+import dotenv
 import pandas as pd
 
 from lib.io import read_csv, write_csv
-from lib.passwords import random_moodle_password
+from lib.passwords import password_generator
 from preprocess_teachers_and_courses import (
     COURSE_SHORTNAME,
     TEACHER_EMAIL,
@@ -24,10 +28,12 @@ from preprocess_teachers_and_courses import (
 
 
 def make_names(name: str, count: int = 100):
-    return [f"{name}{i}" for i in range(1, count + 1)]
+    return [f"{name}{i + 1}" for i in range(count)]
 
 
-def to_teachers_with_courses(src: pd.DataFrame) -> pd.DataFrame:
+def to_teachers_with_courses(
+    src: pd.DataFrame, email_to_password: Callable[[str], str]
+) -> pd.DataFrame:
     res = src.copy()
     res = res.groupby(TEACHER_TLA).agg(
         {
@@ -60,7 +66,7 @@ def to_teachers_with_courses(src: pd.DataFrame) -> pd.DataFrame:
     res["username"] = res[TEACHER_EMAIL]
     res = res.sort_values([TEACHER_LASTNAME, TEACHER_FIRSTNAME])
 
-    res["password"] = [random_moodle_password() for _ in range(len(res))]
+    res["password"] = [email_to_password(email) for email in res[TEACHER_EMAIL]]
 
     res = res.rename(
         columns={
@@ -79,6 +85,13 @@ if __name__ == "__main__":
     parser.add_argument("output")
     args = parser.parse_args()
 
+    dotenv.load_dotenv()
+    salt = os.getenv("SALT")
+    if not salt:
+        sys.exit("Missing environment variable 'SALT'")
+
     preprocessed = read_csv(args.preprocessed)
-    teachers_with_courses = to_teachers_with_courses(preprocessed)
+    teachers_with_courses = to_teachers_with_courses(
+        preprocessed, password_generator(salt)
+    )
     write_csv(teachers_with_courses, args.output)

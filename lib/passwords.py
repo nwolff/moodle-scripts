@@ -7,6 +7,8 @@ Options for the password are described here https://docs.moodle.org/404/en/Uploa
 - Setting the password to "changeme" would let anyone on the internet who can guess usernames login.
 
 So our only option is to generate an impossible to guess password.
+We generate the password from the email so we have repeatability when we run the script
+
 The password rules that are enforced as on 2024-06-25 are here :
 https://moodle.gymnasedebeaulieu.ch/admin/settings.php?section=sitepolicies
 
@@ -16,9 +18,14 @@ https://moodle.gymnasedebeaulieu.ch/admin/settings.php?section=sitepolicies
 
 """
 
-import secrets
+import hashlib
 
 
-def random_moodle_password():
-    """This will contain a number with high probability"""
-    return secrets.token_hex(20)
+def password_generator(salt: str):
+    def password_from_email(email: str) -> str:
+        salted_input = (salt + email).encode("utf-8")
+
+        # this will contain a number with high probability, we just make sure it does
+        return hashlib.sha256(salted_input).hexdigest()[:32] + "1"
+
+    return password_from_email

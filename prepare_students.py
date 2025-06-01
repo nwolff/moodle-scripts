@@ -16,6 +16,7 @@ This implies YOU MUST ADD COHORTS BEFORE RUNNING THIS SCRIPT.
 import argparse
 import os
 import sys
+from typing import Callable
 
 import dotenv
 import pandas as pd
@@ -23,7 +24,7 @@ import structlog
 
 from lib.io import read_excel, write_csv
 from lib.moodle_api import URL, MoodleClient
-from lib.passwords import random_moodle_password
+from lib.passwords import password_generator
 from lib.schoolyear import END_YY, START_YY
 
 log = structlog.get_logger()
@@ -31,7 +32,9 @@ log = structlog.get_logger()
 YEAR_PREFIX = f"{START_YY}{END_YY}_"
 
 
-def transform(moodle: MoodleClient, src: pd.DataFrame) -> pd.DataFrame:
+def transform(
+    src: pd.DataFrame, email_to_password: Callable[[str], str], moodle: MoodleClient
+) -> pd.DataFrame:
     log.info("start", student_count=len(src))
 
     # Some students don't have an email address (yet),
@@ -63,7 +66,7 @@ def transform(moodle: MoodleClient, src: pd.DataFrame) -> pd.DataFrame:
     res["firstname"] = src["welevePrenomUsuel"]
     res["lastname"] = src["weleveNomUsuel"]
 
-    res["password"] = [random_moodle_password() for _ in range(len(res))]
+    res["password"] = res["email"].map(email_to_password)
 
     # Every student gets this cohort
     res["cohort1"] = YEAR_PREFIX + "eleves"
@@ -129,9 +132,13 @@ if __name__ == "__main__":
     token = os.getenv("TOKEN")
     if not token:
         sys.exit("Missing environment variable 'TOKEN'")
+    salt = os.getenv("SALT")
+    if not salt:
+        sys.exit("Missing environment variable 'SALT'")
+
     log.info("connecting", url=URL)
     moodle = MoodleClient(URL, token)
 
     essaim_students = read_excel(args.essaim_students)
-    transformed = transform(moodle, essaim_students)
+    transformed = transform(essaim_students, password_generator(salt), moodle)
     write_csv(transformed, args.moodle_students)
