@@ -1,8 +1,8 @@
-pandas
-openpyxl
+polars
 
 python-dotenv
 requests
 munch
 structlog
 progressbar2
+fastexcel

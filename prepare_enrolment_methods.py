@@ -9,31 +9,26 @@ Administration du site -> Plugins -> Inscriptions -> Upload enrolment methods
 
 import argparse
 
-import pandas as pd
+import polars as pl
 
-from lib.io import read_csv, write_csv
 from preprocess_teachers_and_courses import COURSE_COHORT, COURSE_SHORTNAME
 
 
-def to_enrollment_methods(src: pd.DataFrame) -> pd.DataFrame:
-    src = src[src[COURSE_COHORT].notna()]
+def to_enrollment_methods(src: pl.DataFrame) -> pl.DataFrame:
+    src = src.drop_nulls(COURSE_COHORT)
 
-    res = pd.DataFrame()
-
-    # We start with the columns that come from the source, thus creating all rows
-    res["metacohort"] = src[COURSE_COHORT]
-    res["shortname"] = src[COURSE_SHORTNAME]
-
-    # Now we can set the constant values to the rest of the columns
-    res["operation"] = "add"
-    res["method"] = "cohort"
-    res["disabled"] = 0
-    res["role"] = "student"
-
-    # To help compare different runs of the tool
-    res.sort_values(by="shortname", inplace=True)
-
-    return res
+    return (
+        pl.DataFrame()
+        .with_columns(
+            metacohort=src[COURSE_COHORT],
+            shortname=src[COURSE_SHORTNAME],
+            operation=pl.lit("add"),
+            method=pl.lit("cohort"),
+            disabled=pl.lit(0),
+            role=pl.lit("student"),
+        )
+        .sort(by="shortname")
+    )
 
 
 if __name__ == "__main__":
@@ -42,6 +37,6 @@ if __name__ == "__main__":
     parser.add_argument("output")
     args = parser.parse_args()
 
-    preprocessed = read_csv(args.preprocessed)
+    preprocessed = pl.read_csv(args.preprocessed)
     enrollment_methods = to_enrollment_methods(preprocessed)
-    write_csv(enrollment_methods, args.output)
+    enrollment_methods.write_csv(args.output)

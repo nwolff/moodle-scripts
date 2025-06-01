@@ -10,13 +10,11 @@ ready for importing into Moodle : Admin->Utilisateurs->Importation d'utilisateur
 import argparse
 import os
 import sys
-from itertools import zip_longest
 from typing import Callable
 
 import dotenv
-import pandas as pd
+import polars as pl
 
-from lib.io import read_csv, write_csv
 from lib.passwords import password_generator
 from preprocess_teachers_and_courses import (
     COURSE_SHORTNAME,
@@ -27,54 +25,59 @@ from preprocess_teachers_and_courses import (
 )
 
 
-def make_names(name: str, count: int = 100):
+def make_names(name: str, count: int):
     return [f"{name}{i + 1}" for i in range(count)]
 
 
 def to_teachers_with_courses(
-    src: pd.DataFrame, email_to_password: Callable[[str], str]
-) -> pd.DataFrame:
-    res = src.copy()
-    res = res.groupby(TEACHER_TLA).agg(
-        {
-            TEACHER_LASTNAME: pd.Series.min,
-            TEACHER_FIRSTNAME: pd.Series.min,
-            TEACHER_EMAIL: pd.Series.min,
-            COURSE_SHORTNAME: pd.Series.tolist,
-        }
+    src: pl.DataFrame, email_to_password: Callable[[str], str]
+) -> pl.DataFrame:
+    res = src.group_by(TEACHER_TLA).agg(
+        pl.min(TEACHER_LASTNAME),
+        pl.min(TEACHER_FIRSTNAME),
+        pl.min(TEACHER_EMAIL),
+        pl.col(COURSE_SHORTNAME),
     )
 
+    course_count = res.select(pl.col(COURSE_SHORTNAME).list.len()).max().item()
+
     # Dynamically build the course columns based on the list we collected in the shortname column
-    # https://stackoverflow.com/questions/75565785/pandas-list-unpacking-to-multiple-columns
-    courses_column_names = make_names("course")
-    # Important to make courses a list, otherwise it gets spent the first time we iterate it
-    courses = list(zip_longest(*res[COURSE_SHORTNAME]))
-    d = dict(zip(courses_column_names, courses))
-    res = res.assign(**d)
+    res = res.with_columns(
+        pl.col(COURSE_SHORTNAME).list.to_struct(
+            fields=make_names("course", course_count)
+        )
+    ).unnest(COURSE_SHORTNAME)
 
     # Type 2 to make users teachers for their courses
-    for i in range(len(list(courses))):
-        res[f"type{i + 1}"] = 2
+    type_columns = {name: pl.lit(2) for name in make_names("type", course_count)}
+    res = res.with_columns(**type_columns)
 
-    ###
-    # Final formatting
-    ###
-    res = res.drop(columns=[COURSE_SHORTNAME])
+    ######
+    # Generate all required columns
+    ######
+    res = res.with_columns(
+        cohort1=pl.lit(1),  #  Enseignants au gymnase de Beaulieu
+        username=pl.col(TEACHER_EMAIL),
+        password=pl.col(TEACHER_EMAIL).map_elements(
+            email_to_password, return_dtype=pl.String
+        ),
+    )
 
-    res["cohort1"] = 1  #  Enseignants au gymnase de Beaulieu
-
-    res["username"] = res[TEACHER_EMAIL]
-    res = res.sort_values([TEACHER_LASTNAME, TEACHER_FIRSTNAME])
-
-    res["password"] = [email_to_password(email) for email in res[TEACHER_EMAIL]]
-
+    #####
+    # Make the resulting columns look as expected
+    ######
     res = res.rename(
-        columns={
+        {
             TEACHER_LASTNAME: "lastname",
             TEACHER_FIRSTNAME: "firstname",
             TEACHER_EMAIL: "email",
         }
     )
+
+    res = res.drop(TEACHER_TLA)
+
+    # For human readability
+    res = res.sort(["lastname", "firstname"])
 
     return res
 
@@ -90,8 +93,8 @@ if __name__ == "__main__":
     if not salt:
         sys.exit("Missing environment variable 'SALT'")
 
-    preprocessed = read_csv(args.preprocessed)
+    preprocessed = pl.read_csv(args.preprocessed)
     teachers_with_courses = to_teachers_with_courses(
         preprocessed, password_generator(salt)
     )
-    write_csv(teachers_with_courses, args.output)
+    teachers_with_courses.write_csv(args.output)
