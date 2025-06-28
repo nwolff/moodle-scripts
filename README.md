@@ -19,6 +19,6 @@ https://docs.astral.sh/uv/getting-started/installation/
 
 Set the schoolyear in _lib/schoolyear.py_
 
-To run one of the scripts:
+To run any script:
 
     uv run name-of-script.py

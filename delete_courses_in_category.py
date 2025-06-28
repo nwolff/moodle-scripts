@@ -1,6 +1,8 @@
 """
 Recursively deletes courses under a given category.
 
+Automatically unenrolls students and teachers from the deleted courses.
+
 **Warning** Course backups are deleted with the courses
 (deleting a course manually does the same thing)
 

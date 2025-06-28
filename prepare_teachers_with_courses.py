@@ -8,7 +8,7 @@ ready for importing into Moodle : Admin->Utilisateurs->Importation d'utilisateur
 import argparse
 import os
 import sys
-from typing import Callable
+from collections.abc import Callable
 
 import dotenv
 import polars as pl
