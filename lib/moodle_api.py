@@ -1,4 +1,5 @@
-# ruff: noqa: ANN001 ANN003 ANN101 ANN204
+# ruff: noqa: ANN001 ANN003 ANN204
+
 import requests
 from munch import munchify
 

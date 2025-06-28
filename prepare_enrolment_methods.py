@@ -1,5 +1,3 @@
-#! /usr/bin/env python
-
 """
 Takes a file preprocessed by preprocess_teachers_and_courses.py
 

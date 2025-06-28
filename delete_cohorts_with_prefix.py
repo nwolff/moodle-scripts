@@ -1,5 +1,3 @@
-#! /usr/bin/env python
-
 """
 Deletes all cohorts that start with a given prefix.
 The prefix should be something like "2324_".

@@ -1,5 +1,3 @@
-#! /usr/bin/env python
-
 """
 Recursively deletes courses under a given category.
 

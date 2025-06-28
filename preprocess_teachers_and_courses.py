@@ -1,5 +1,3 @@
-#! /usr/bin/env python
-
 """
 Takes an essaim export of teachers and courses that looks like this:
 (Note that the first 4 lines are for teacher "Mob", the last two ones for "ZZn")

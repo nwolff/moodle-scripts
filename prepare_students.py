@@ -1,5 +1,3 @@
-#! /usr/bin/env python
-
 """
 Takes an essaim export of students that looks like this:
 

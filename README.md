@@ -1,41 +1,24 @@
 Some scripts that are useful to manage Moodle.
 
-Runs on python3.9+, which is part of the mac command line developer tools that can be installed without being sudoer
-
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/nwolff/moodle-scripts)
-
 
 # To run the scripts
 
-## Virtual environment
+## Install uv
 
-If you don't have direnv installed on your computer you can manually create the virtual environment :
-
-To create the virtualenv (you need to do this only once):
-
-    python3 -m venv .venv
-
-To enter the virtualenv:
-
-    source .venv/bin/activate
-
-## Installing dependencies
-
-Once inside the virtualenv you should install the requirements like this:
-
-    pip install -r requirements.txt
+https://docs.astral.sh/uv/getting-started/installation/
 
 ## Developing
 
-    pip install -r dev-requirements.txt
-    ruff check
-    ruff format
-    mypy .
+    uv sync
+    uv run ruff check
+    uv run ruff format
+    uv run mypy .
 
 ## Running
 
 Set the schoolyear in _lib/schoolyear.py_
 
-All scripts are marked as executable, so you can just run them like this:
+To run one of the scripts:
 
-    ./name-of-script.py
+    uv run name-of-script.py
