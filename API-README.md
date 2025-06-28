@@ -44,7 +44,7 @@ https://moodle.gymnasedebeaulieu.ch/admin/webservice/tokens.php
   - Service : admin_api
   - Valide jusqu'au : un an plus tard
 
-- Chercher l'utilisateur en triant par service, "admin_api" apparait en premier. Copier la valeur du jeton
+- Le jeton est affiché (et ne le sera plus jamais). Copier la valeur du jeton.
 
 Exporter une variable d'environnement TOKEN avec la valeur de ce jeton.
 

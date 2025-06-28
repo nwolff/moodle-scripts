@@ -14,7 +14,7 @@ This implies YOU MUST ADD COHORTS BEFORE RUNNING THIS SCRIPT.
 import argparse
 import os
 import sys
-from typing import Callable
+from collections.abc import Callable
 
 import dotenv
 import polars as pl

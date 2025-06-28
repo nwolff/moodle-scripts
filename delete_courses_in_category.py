@@ -1,6 +1,8 @@
 """
 Recursively deletes courses under a given category.
 
+Automatically unenrolls students and teachers from the deleted courses.
+
 **Warning** Course backups are deleted with the courses
 (deleting a course manually does the same thing)
 
@@ -43,12 +45,11 @@ def delete_moodle_courses(moodle: MoodleClient, category_id: str):
         print("No courses found, nothing to do")
         return
 
-    for i, course in enumerate(courses_to_delete):
+    for course in courses_to_delete:
         log.info(
             "course",
-            index=i,
             shortname=course.shortname,
-            categoryname=course.categoryname,
+            category=course.categoryname,
         )
 
     print()
