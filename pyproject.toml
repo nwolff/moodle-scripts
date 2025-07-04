@@ -6,6 +6,7 @@ requires-python = ">=3.13"
 dependencies = [
     "fastexcel>=0.14.0",
     "munch>=4.0.0",
+    "numpy>=2.3.1",
     "polars>=1.31.0",
     "progressbar2>=4.5.0",
     "python-dotenv>=1.1.1",

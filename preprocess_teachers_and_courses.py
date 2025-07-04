@@ -2,7 +2,7 @@
 Takes an essaim export of teachers and courses that looks like this:
 (Note that the first 4 lines are for teacher "Mob", the last two ones for "ZZn")
 
-Maitre::sigle   Maitre::wnom	Maitre::wprenom	    Maitre::prenomUsuel     Maitre::wemail	        EnseignementProchain::wNoCoursLDAP Or
+sigle           wnom	        wprenom	        prenomUsuel                 wemail	        EnseignementProchain::wNoCoursLDAP Or
                                                                                                     EnseignementActuel::wNoCoursLDAP
 
 Mob             Mould	        Bob	                B                       bmould@school.ch	    2324_3M08_Mathématiques_(niveau_standard)
@@ -65,7 +65,7 @@ def preprocess(src: pl.DataFrame) -> pl.DataFrame:
     log.info(
         "start",
         num_courses=len(src),
-        unique_teachers=len(src["Maitre::wnom"].unique()),
+        unique_teachers=len(src["wnom"].unique()),
     )
 
     ###
@@ -74,14 +74,12 @@ def preprocess(src: pl.DataFrame) -> pl.DataFrame:
     teacher_info_lookup = pl.DataFrame()
 
     teacher_info_lookup[[TEACHER_TLA, TEACHER_LASTNAME, TEACHER_EMAIL]] = src[
-        "Maitre::wsigle", "Maitre::wnom", "Maitre::wemail"
+        "wsigle", "wnom", "wemail"
     ]
 
     # Usual firstname with fallback to the official one
     teacher_info_lookup = teacher_info_lookup.with_columns(
-        src["Maitre::prenomUsuel"]
-        .fill_null(src["Maitre::wprenom"])
-        .alias(TEACHER_FIRSTNAME)
+        src["prenomUsuel"].fill_null(src["wprenom"]).alias(TEACHER_FIRSTNAME)
     )
 
     teacher_info_lookup = teacher_info_lookup.filter(~pl.col(TEACHER_TLA).is_null())
@@ -89,6 +87,7 @@ def preprocess(src: pl.DataFrame) -> pl.DataFrame:
     ###
     # 2. Unpack course and class information
     ###
+
     # First find out in which column the data lives depending on "la bascule de l'année"
     course_column = None
     if "EnseignementProchain::wNoCoursLDAP" in src.columns:
@@ -98,7 +97,7 @@ def preprocess(src: pl.DataFrame) -> pl.DataFrame:
 
     res = pl.DataFrame()
     res = res.with_columns(
-        src["Maitre::wsigle"].alias(TEACHER_TLA),
+        src["wsigle"].alias(TEACHER_TLA),
         temp=src[course_column]
         .map_elements(
             lambda c: c.split("_", maxsplit=2)[1:], return_dtype=pl.List(pl.String)
@@ -108,10 +107,13 @@ def preprocess(src: pl.DataFrame) -> pl.DataFrame:
 
     res = res.with_columns(pl.col(TEACHER_TLA).fill_null(strategy="forward"))
 
+    ###
+    # 4. Join the course and class information to the teacher info
+    ###
     res = res.join(teacher_info_lookup, on=TEACHER_TLA, maintain_order="left")
 
     ###
-    # 4. Remove lines that won't become a course in Moodle
+    # 5. Remove lines that won't become a course in Moodle
     ###
 
     res = res.drop_nulls(subset=[COURSE])
@@ -142,7 +144,7 @@ def preprocess(src: pl.DataFrame) -> pl.DataFrame:
     log.info("done removing duplicate courses for a teacher", num_courses=len(res))
 
     ###
-    # 5. Split some of the courses shared between two teachers
+    # 6. Split some of the courses shared between two teachers
     ###
 
     log.info("splitting some of the courses that are shared between teachers...")
@@ -179,7 +181,7 @@ def preprocess(src: pl.DataFrame) -> pl.DataFrame:
     print()
 
     ###
-    # 6. Fill-in derived fields
+    # 7. Fill-in derived fields
     ###
 
     res = res.with_columns(
@@ -211,7 +213,7 @@ def preprocess(src: pl.DataFrame) -> pl.DataFrame:
     )
 
     ###
-    # 7. Remove temporary fields
+    # 8. Remove temporary fields
     ###
     res = res[ALL_FIELDS]
 

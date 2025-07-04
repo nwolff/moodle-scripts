@@ -1,8 +1,5 @@
-# All types of virtualenvs
+# virtualenv (managed by uv)
 .venv/
-
-# UV lock (even though it's recommended to check it in)
-uv.lock
 
 # Configuration files that may contain secrets
 .env
