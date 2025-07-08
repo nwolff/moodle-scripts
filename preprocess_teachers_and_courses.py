@@ -71,6 +71,7 @@ def preprocess(src: pl.DataFrame) -> pl.DataFrame:
     ###
     # 1. Start with the teacher info.
     ###
+
     teacher_info_lookup = pl.DataFrame()
 
     teacher_info_lookup[[TEACHER_TLA, TEACHER_LASTNAME, TEACHER_EMAIL]] = src[
@@ -110,6 +111,7 @@ def preprocess(src: pl.DataFrame) -> pl.DataFrame:
     ###
     # 4. Join the course and class information to the teacher info
     ###
+
     res = res.join(teacher_info_lookup, on=TEACHER_TLA, maintain_order="left")
 
     ###
@@ -171,7 +173,7 @@ def preprocess(src: pl.DataFrame) -> pl.DataFrame:
         .alias(COURSE_COHORT),
     )
 
-    # Print result of split
+    # Print result of split, for information
     with pl.Config(tbl_rows=-1):
         print(
             res.filter(pl.col("index").is_in(need_split_index))

@@ -47,12 +47,16 @@ def add_cohorts(moodle: MoodleClient, course_category_id: str, src: pl.DataFrame
         found=len(existing),
     )
 
-    missing = sorted(wanted - existing)
-    if not missing:
-        log.info("nothing to do")
-        sys.exit(0)
+    # We just display these, in case the user wants to remove them
+    extra = sorted(existing - wanted)
+    log.info("extra cohorts", extra=extra)
 
+    missing = sorted(wanted - existing)
     log.info("missing cohorts", missing=missing)
+
+    if not missing:
+        log.info("no missing cohorts, nothing to do.")
+        sys.exit(0)
 
     user_input = input(f"Do you want to create {len(missing)} cohorts (yes/no): ")
     if user_input.lower() != "yes":
