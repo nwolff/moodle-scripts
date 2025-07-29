@@ -1,10 +1,15 @@
-# virtualenv (managed by uv)
-.venv/
-
 # Configuration files that may contain secrets
 .env
 
-# Always
+# Temporary place to store and process production files
+local/
+
+# virtualenv (managed by uv)
+.venv/
+
+# misc caches
+.mypy_cache/
+.ruff_cache/
 __pycache__/
 
 # IDEs
@@ -13,6 +18,3 @@ __pycache__/
 
 # Mac
 .DS_Store
-
-# For files we need but don't want it git
-local/

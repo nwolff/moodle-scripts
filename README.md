@@ -22,3 +22,8 @@ Set the schoolyear in _lib/schoolyear.py_
 To run any script:
 
     uv run name-of-script.py
+
+## Upgrading packages
+
+    uv lock --upgrade
+    uv sync
