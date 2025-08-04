@@ -43,11 +43,17 @@ def transform(
         missing_email_count=missing_email_count,
     )
     if missing_email_count:
-        print(
-            src.filter(students_with_no_email).with_columns(
-                "weleveNomUsuel", "welevePrenomUsuel", "ElevesCursusActif::classe"
+        with pl.Config() as cfg:
+            cfg.set_tbl_rows(-1)
+            cfg.set_tbl_hide_dataframe_shape(True)
+            cfg.set_tbl_hide_column_names(True)
+            cfg.set_tbl_hide_column_data_types(True)
+            cfg.set_tbl_formatting("NOTHING")
+            print(
+                src.filter(students_with_no_email).select(
+                    "weleveNomUsuel", "welevePrenomUsuel", "ElevesCursusActif::classe"
+                )
             )
-        )
         src = src.filter(~students_with_no_email)
         log.info("after removing missing emails", student_count=len(src))
 

@@ -151,12 +151,13 @@ def preprocess(src: pl.DataFrame) -> pl.DataFrame:
 
     log.info("splitting some of the courses that are shared between teachers...")
 
-    res = res.with_row_index()  # We use the index to mark which courses should be split. Add it once to the dataframe
+    # We use the index to mark which courses should be split. Add it once to the dataframe
+    res = res.with_row_index()
 
     # These are the type of courses that when shared between multipler teachers, will get two separate moodle courses
     split_candidates = res.filter(res[COURSE].is_in(("Bureautique", "Informatique")))
 
-    # Find all the courses where class and course are duplicated (but not the teacher, we took care of those just above)
+    # Find all the courses where class and course are duplicated, but not the teacher (we took care of those just above)
     need_split = split_candidates.filter(
         split_candidates.select([CLASS, COURSE]).is_duplicated()
     )
@@ -174,13 +175,16 @@ def preprocess(src: pl.DataFrame) -> pl.DataFrame:
     )
 
     # Print result of split, for information
-    with pl.Config(tbl_rows=-1):
+    with pl.Config() as cfg:
+        cfg.set_tbl_rows(-1)
+        cfg.set_tbl_hide_dataframe_shape(True)
+        cfg.set_tbl_hide_column_data_types(True)
         print(
             res.filter(pl.col("index").is_in(need_split_index))
             .sort(CLASS)
             .select([TEACHER_TLA, CLASS, COURSE, COURSE_COHORT])
         )
-    print()
+        print()
 
     ###
     # 7. Fill-in derived fields
@@ -271,7 +275,7 @@ if __name__ == "__main__":
     teachers_and_courses = pl.read_excel(args.teachers_and_courses)
     output = preprocess(teachers_and_courses)
 
-    # Dump categories to get a feel of how we classified things
+    # Dump categories so we can manually create them in moodle
     print()
     print("Categories: ")
     print()
