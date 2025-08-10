@@ -38,7 +38,7 @@ Avec `webservice user` comme seul utilisateur autorisé
 Générer un jeton pour l'utilisateur `webservice_user`.
 https://moodle.gymnasedebeaulieu.ch/admin/webservice/tokens.php
 
-- Cliquer sur le bouton "ajouter" en bas à droite
+- Cliquer sur le bouton "Créer jeton"
 
   - Utilisateur : webservice user
   - Service : admin_api

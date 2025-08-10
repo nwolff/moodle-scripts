@@ -72,15 +72,14 @@ def preprocess(src: pl.DataFrame) -> pl.DataFrame:
     # 1. Start with the teacher info.
     ###
 
-    teacher_info_lookup = pl.DataFrame()
-
-    teacher_info_lookup[[TEACHER_TLA, TEACHER_LASTNAME, TEACHER_EMAIL]] = src[
-        "wsigle", "wnom", "wemail"
-    ]
-
-    # Usual firstname with fallback to the official one
-    teacher_info_lookup = teacher_info_lookup.with_columns(
-        src["prenomUsuel"].fill_null(src["wprenom"]).alias(TEACHER_FIRSTNAME)
+    teacher_info_lookup = pl.DataFrame().with_columns(
+        [
+            src["wsigle"].alias(TEACHER_TLA),
+            src["wnom"].alias(TEACHER_LASTNAME),
+            src["wemail"].alias(TEACHER_EMAIL),
+            # Usual firstname with fallback to the official one
+            src["prenomUsuel"].fill_null(src["wprenom"]).alias(TEACHER_FIRSTNAME),
+        ]
     )
 
     teacher_info_lookup = teacher_info_lookup.filter(~pl.col(TEACHER_TLA).is_null())
