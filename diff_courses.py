@@ -3,7 +3,7 @@ Takes:
 - a top-level category id
 - a file preprocessed by preprocess_teachers_and_courses.py
 
-compares the list of courses found in moodle vs the liste of courses in the file
+compares the list of courses found in moodle vs the list of courses in the file
 
 Uses the Moodle API
 """

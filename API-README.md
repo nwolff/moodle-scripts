@@ -15,6 +15,15 @@ Le rôle webservice doit avoir les capabilités :
 - moodle/cohort:view pour voir les cohortes
 - moodle/cohort:create pour créer les cohortes
 - moodle/cohort:manage pour supprimer les cohortes
+- moodle/user:viewdetails + moodle/site:viewuseridentity pour pouvoir récupérer les informations des élèves
+
+## Une config dans les politiques utilisateur
+
+Afin de pouvoir récupérer les emails des utilisateurs existants dans moodle,
+il faut que le champ "email" soit coché dans la section "Afficher l'identité de l'utilisateur"
+de cette page
+
+https://moodle.gymnasedebeaulieu.ch/admin/settings.php?section=userpolicies
 
 ## Un utilisateur spécifique `webservice_user`
 
@@ -29,7 +38,19 @@ https://moodle.gymnasedebeaulieu.ch/admin/roles/assign.php?contextid=1
 
 https://moodle.gymnasedebeaulieu.ch/admin/settings.php?section=externalservices
 
-Avec les fonctions dont on a besoin: `core_course_delete_courses, core_course_get_categories, core_course_get_courses_by_field, core_cohort_search_cohorts, core_cohort_create_cohorts, core_cohort_delete_cohorts`
+Avec les fonctions dont on a besoin:
+
+- core_cohort_create_cohorts
+- core_cohort_delete_cohorts
+- core_cohort_get_cohort_members
+- core_cohort_search_cohorts
+
+- core_course_delete_courses
+- core_course_get_categories
+- core_course_get_courses_by_field
+- core_course_search_courses
+
+- core_user_get_users_by_field`
 
 Avec `webservice user` comme seul utilisateur autorisé
 
