@@ -1,7 +1,6 @@
 """
 Deletes all cohorts that start with a given prefix.
 The prefix should be something like "2324_".
-Does 100 at a time, so you may need to run this script more than once.
 
 We need this script because there is no bulk cohort delete in the moodle admin interface
 
