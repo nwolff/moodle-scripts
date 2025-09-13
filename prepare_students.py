@@ -64,6 +64,20 @@ def transform(
         print(src.filter(duplicate_emails))
         sys.exit("Exiting")
 
+    # The only 4th year students that are taught in Beaulieu are the 4MSOP,
+    # We filter all others because we need to keep the numbers low in moodle so we don't blow up our plan.
+    # Currently these are the 4E, 4MSCI, 4MSSA
+    students_not_attending_here = src["ElevesCursusActif::classe"].is_in(
+        ["4E1", "4MSCI1", "4MSSA1", "4MSSA2"]
+    )
+    students_not_attending_here_count = int(students_not_attending_here.sum())
+    log.info(
+        "removing students not attending here",
+        students_not_attending_here=students_not_attending_here_count,
+    )
+    src = src.filter(~students_not_attending_here)
+    log.info("after removing students not attending here", student_count=len(src))
+
     # Build up most of the data
     res = pl.DataFrame().with_columns(
         email=src["adcMail"],
