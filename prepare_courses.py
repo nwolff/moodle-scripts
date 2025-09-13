@@ -8,6 +8,7 @@ Admin->Cours->Modifier les cours en lots
 import argparse
 
 import polars as pl
+import structlog
 
 from preprocess_teachers_and_courses import (
     COURSE_CATEGORY_PATH,
@@ -15,10 +16,16 @@ from preprocess_teachers_and_courses import (
     COURSE_SHORTNAME,
 )
 
+log = structlog.get_logger()
+
 
 def to_courses(src: pl.DataFrame) -> pl.DataFrame:
     res = src.select([COURSE_SHORTNAME, COURSE_FULLNAME, COURSE_CATEGORY_PATH])
     res = res.sort(by=COURSE_SHORTNAME)
+    log.info(
+        "done",
+        num_courses=len(res),
+    )
     return res
 
 

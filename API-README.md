@@ -28,8 +28,10 @@ https://moodle.gymnasedebeaulieu.ch/admin/settings.php?section=userpolicies
 ## Un utilisateur spécifique `webservice_user`
 
 Cet utilisateur doit avoir la méthode d'authentification "comptes manuels"
+(on doit donc inventer un mot de passe)
 
 On est forcé d'assigner une adresse email unique à cet utilisateur technique
+(on l'invente)
 
 Assigner le rôle `webservice role` à cet utilisateur en utilisant
 https://moodle.gymnasedebeaulieu.ch/admin/roles/assign.php?contextid=1

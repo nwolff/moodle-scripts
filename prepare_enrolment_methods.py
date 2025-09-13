@@ -8,14 +8,17 @@ Administration du site -> Plugins -> Inscriptions -> Upload enrolment methods
 import argparse
 
 import polars as pl
+import structlog
 
 from preprocess_teachers_and_courses import COURSE_COHORT, COURSE_SHORTNAME
+
+log = structlog.get_logger()
 
 
 def to_enrollment_methods(src: pl.DataFrame) -> pl.DataFrame:
     src = src.drop_nulls(COURSE_COHORT)
 
-    return (
+    res = (
         pl.DataFrame()
         .with_columns(
             metacohort=src[COURSE_COHORT],
@@ -27,6 +30,13 @@ def to_enrollment_methods(src: pl.DataFrame) -> pl.DataFrame:
         )
         .sort(by="shortname")
     )
+
+    log.info(
+        "done",
+        num_enrollment_methods=len(res),
+    )
+
+    return res
 
 
 if __name__ == "__main__":

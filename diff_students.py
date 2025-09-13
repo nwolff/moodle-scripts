@@ -50,10 +50,10 @@ def diff_students(moodle: MoodleClient, yearly_cohort_id: str, src: pl.DataFrame
 
     # We just display these, in case the user wants to remove them
     extra = sorted(existing - wanted)
-    log.info("in moodle but not in file", students=extra)
+    log.info("in moodle but not in file", count=len(extra), students=extra)
 
     missing = sorted(wanted - existing)
-    log.info("in file but not in moodle", students=missing)
+    log.info("in file but not in moodle", cout=len(missing), students=missing)
 
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@ from collections.abc import Callable
 
 import dotenv
 import polars as pl
+import structlog
 
 from lib.passwords import password_generator
 from preprocess_teachers_and_courses import (
@@ -21,6 +22,8 @@ from preprocess_teachers_and_courses import (
     TEACHER_LASTNAME,
     TEACHER_TLA,
 )
+
+log = structlog.get_logger()
 
 
 def make_names(name: str, count: int):
@@ -77,6 +80,10 @@ def to_teachers_with_courses(
     # For human readability
     res = res.sort(["lastname", "firstname"])
 
+    log.info(
+        "done",
+        num_teachers=len(res),
+    )
     return res
 
 

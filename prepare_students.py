@@ -94,7 +94,7 @@ def transform(
         )
     ).unnest("courses")
 
-    log.info("done")
+    log.info("done", student_counts=len(res))
 
     return res
 
