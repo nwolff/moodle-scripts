@@ -53,7 +53,7 @@ def diff_students(moodle: MoodleClient, yearly_cohort_id: str, src: pl.DataFrame
     log.info("in moodle but not in file", count=len(extra), students=extra)
 
     missing = sorted(wanted - existing)
-    log.info("in file but not in moodle", cout=len(missing), students=missing)
+    log.info("in file but not in moodle", count=len(missing), students=missing)
 
 
 if __name__ == "__main__":
