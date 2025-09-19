@@ -132,6 +132,10 @@ def preprocess(src: pl.DataFrame) -> pl.DataFrame:
     res = res.filter(~res[CLASS].str.starts_with("TM"))
     log.info("done removing courses for TM* classes", num_courses=len(res))
 
+    # Soutien* Classes don't need a course.
+    res = res.filter(~res[CLASS].str.starts_with("Soutien"))
+    log.info("done removing courses for Soutien* classes", num_courses=len(res))
+
     # ZZ is a marker for when we don't know who will be giving a class.
     # We don't create a course in moodle for those.
     res = res.filter(~res[TEACHER_LASTNAME].str.starts_with("ZZ"))
