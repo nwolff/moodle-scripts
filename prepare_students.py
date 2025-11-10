@@ -101,10 +101,11 @@ def transform(
     )
 
     # Create columns starting with name "cohort3" for the remaining courses
+    max_number_of_courses = res.select(pl.col("courses").list.len().max()).item()
     res = res.with_columns(
         pl.col("courses").list.to_struct(
-            n_field_strategy="max_width",
             fields=lambda idx: f"cohort{idx + 3}",  # Start with cohort3
+            upper_bound=max_number_of_courses,
         )
     ).unnest("courses")
 
