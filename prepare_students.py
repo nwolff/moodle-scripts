@@ -1,14 +1,14 @@
 """
 Takes an essaim export of students that looks like this:
 
-adcMail                 weleveNomUsuel      welevePrenomUsuel       ElevesCursusActif::classe  ElevesCursusActif::xenclassDiscr
-h.muster@eduvaud.ch     MUSTER              Hans                    3M05                       3MAL4 - An - NR - 3MOSPM2 - 3MOCMU1 - TM
-j.ballard@eduvaud.ch    BALLARD             Justine                 3CCI1                      3CAL3 - 3CALOCI1 - CI
+adcMail                 weleveNomUsuel      welevePrenomUsuel       ElevesCursusActif::classe  ElevesCursusActif::xdisciplines
+h.muster@eduvaud.ch     MUSTER              Hans                    3M05                       3M05,Français,Charlotte STEINER,3M05,Allemand,Aurélie GROZEMA,3M05,Anglais,Monique GIANINAZZI FALCY,3M05,Maths re,Bernard HALTER,3M05,Biologie,Karine RYFFEL,3M05HI,Histoire,Mylène HOULMANN,3M05GE,Géographie,Philippe MAENDLY,3M05,Philo,Bertrand RICKENBACHER,3MOSPM2,Physique,Emmanuel ROLAND,3MOSPM2,Appl maths,Bernard HALTER,3MOCIN2,Info,Alexandre LOPES,3M05,Sports,Silvan KELLER
 
 Outputs a file ready for importing into Moodle : admin->users->import users
 
 Uses the Moodle API to retrieve the list of existing cohorts and filters courses that don't have a matching cohort.
-This implies YOU MUST ADD COHORTS BEFORE RUNNING THIS SCRIPT.
+This implies:
+                 YOU MUST ADD COHORTS BEFORE RUNNING THIS SCRIPT.
 """
 
 import argparse
@@ -86,8 +86,11 @@ def transform(
         lastname=src["weleveNomUsuel"],
         password=src["adcMail"].map_elements(email_to_password, return_dtype=pl.String),
         cohort1=pl.lit(YEAR_PREFIX + "eleves"),
-        cohort2=pl.concat_str(pl.lit(YEAR_PREFIX), src["ElevesCursusActif::classe"]),
-        courses=src["ElevesCursusActif::xenclassDiscr"].str.split(" - "),
+        courses=src["ElevesCursusActif::xdisciplines"]
+        .str.split(",")
+        .list.gather_every(3)  # xdisciplines contains (code, name, teacher) triples.
+        .list.unique(maintain_order=True)
+        .list.sort(),  # For the stability of the created file between runs
     )
 
     # Prefix the year to the courses list
@@ -100,11 +103,11 @@ def transform(
         pl.col("courses").list.filter(pl.element().is_in(existing_cohorts))
     )
 
-    # Create columns starting with name "cohort3" for the remaining courses
+    # Create columns starting with name "cohort2" for the remaining courses
     max_number_of_courses = res.select(pl.col("courses").list.len().max()).item()
     res = res.with_columns(
         pl.col("courses").list.to_struct(
-            fields=lambda idx: f"cohort{idx + 3}",  # Start with cohort3
+            fields=lambda idx: f"cohort{idx + 2}",  # Start with cohort2
             upper_bound=max_number_of_courses,
         )
     ).unnest("courses")
