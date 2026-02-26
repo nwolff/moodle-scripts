@@ -1,6 +1,7 @@
 """
 Takes:
-- a top-level cohort id (for instance in 2526 the top-level cohort is 2526_eleves and its id is 1821)
+- a top-level cohort id (for instance in 2526 the top-level cohort is
+  2526_eleves and its id is 1821)
 - a csv obtained by running prepare_students.py
 
 compares the list of students found in moodle vs the list of students in the file

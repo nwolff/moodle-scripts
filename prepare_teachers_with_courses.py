@@ -42,7 +42,8 @@ def to_teachers_with_courses(
 
     course_count = res.select(pl.col(COURSE_SHORTNAME).list.len()).max().item()
 
-    # Dynamically build the course columns based on the list we collected in the shortname column
+    # Dynamically build the course columns based on the list iwe collected in the
+    # shortname column
     res = res.with_columns(
         pl.col(COURSE_SHORTNAME).list.to_struct(
             fields=make_names("course", course_count)
