@@ -10,10 +10,9 @@ https://docs.astral.sh/uv/getting-started/installation/
 
 ## Developing
 
-    uv sync
-    uv run ruff check
-    uv run ruff format
     uv run mypy .
+    uv run ruff check --fix
+    uv run ruff format
 
 ## Running
 

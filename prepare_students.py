@@ -6,7 +6,8 @@ h.muster@eduvaud.ch     MUSTER              Hans                    3M05        
 
 Outputs a file ready for importing into Moodle : admin->users->import users
 
-Uses the Moodle API to retrieve the list of existing cohorts and filters courses that don't have a matching cohort.
+Uses the Moodle API to retrieve the list of existing cohorts and filters courses
+that don't have a matching cohort.
 This implies:
                  YOU MUST ADD COHORTS BEFORE RUNNING THIS SCRIPT.
 """
