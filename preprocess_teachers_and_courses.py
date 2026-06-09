@@ -65,7 +65,7 @@ def preprocess(src: pl.DataFrame) -> pl.DataFrame:
     log.info(
         "start",
         num_courses=len(src),
-        unique_teachers=len(src["wnom"].unique()),
+        unique_teachers=len(src["Maitre::wnom"].unique()),
     )
 
     ###
@@ -74,11 +74,13 @@ def preprocess(src: pl.DataFrame) -> pl.DataFrame:
 
     teacher_info_lookup = pl.DataFrame().with_columns(
         [
-            src["wsigle"].alias(TEACHER_TLA),
-            src["wnom"].alias(TEACHER_LASTNAME),
-            src["wemail"].alias(TEACHER_EMAIL),
+            src["Maitre::wsigle"].alias(TEACHER_TLA),
+            src["Maitre::wnom"].alias(TEACHER_LASTNAME),
+            src["Maitre::wemail"].alias(TEACHER_EMAIL),
             # Usual firstname with fallback to the official one
-            src["prenomUsuel"].fill_null(src["wprenom"]).alias(TEACHER_FIRSTNAME),
+            src["Maitre::prenomUsuel"]
+            .fill_null(src["Maitre::wprenom"])
+            .alias(TEACHER_FIRSTNAME),
         ]
     )
 
@@ -97,7 +99,7 @@ def preprocess(src: pl.DataFrame) -> pl.DataFrame:
 
     res = pl.DataFrame()
     res = res.with_columns(
-        src["wsigle"].alias(TEACHER_TLA),
+        src["Maitre::wsigle"].alias(TEACHER_TLA),
         temp=src[course_column]
         .map_elements(
             lambda c: c.split("_", maxsplit=2)[1:], return_dtype=pl.List(pl.String)
@@ -157,7 +159,7 @@ def preprocess(src: pl.DataFrame) -> pl.DataFrame:
     # We use the index to mark which courses should be split. Add it once to the dataframe
     res = res.with_row_index()
 
-    # These are the type of courses that when shared between multipler teachers, will get two separate moodle courses
+    # These are the type of courses that when shared between multiple teachers, will get two separate moodle courses
     split_candidates = res.filter(res[COURSE].is_in(("Bureautique", "Informatique")))
 
     # Find all the courses where class and course are duplicated, but not the teacher (we took care of those just above)
@@ -255,7 +257,7 @@ def course_to_category(s: str) -> str:
         return "Informatique"
     if s.startswith(("A&R", "Économie", "Economie")) or "finance" in s.lower():
         return "Economie_et_droit"
-    if s.startswith("DCO"):
+    if ("DCO") in s:
         return "DCO"
     # We don't just match on "histoire" because "histoire de l'art" is in its own category
     if s == "Histoire_et_institutions_politiques":
@@ -283,8 +285,7 @@ if __name__ == "__main__":
     print("Categories: ")
     print()
     categories = output[COURSE_CATEGORY_PATH].unique()
-    categories.sort()
-    for cat in categories:
+    for cat in categories.sort():
         print(cat)
 
     output.write_csv(args.output)
