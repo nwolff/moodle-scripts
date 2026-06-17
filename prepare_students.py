@@ -13,15 +13,14 @@ This implies:
 """
 
 import argparse
-import os
 import sys
 from collections.abc import Callable
 
-import dotenv
 import polars as pl
 import structlog
 
-from lib.moodle_api import URL, MoodleClient
+from lib.config import get_moodle_client, get_salt
+from lib.moodle_api import MoodleClient
 from lib.passwords import password_generator
 from lib.schoolyear import END_YY, START_YY
 
@@ -138,16 +137,8 @@ if __name__ == "__main__":
     parser.add_argument("moodle_students")
     args = parser.parse_args()
 
-    dotenv.load_dotenv()
-    token = os.getenv("TOKEN")
-    if not token:
-        sys.exit("Missing environment variable 'TOKEN'")
-    salt = os.getenv("SALT")
-    if not salt:
-        sys.exit("Missing environment variable 'SALT'")
-
-    log.info("connecting", url=URL)
-    moodle = MoodleClient(URL, token)
+    salt = get_salt()
+    moodle = get_moodle_client()
 
     essaim_students = pl.read_excel(args.essaim_students)
     transformed = transform(essaim_students, password_generator(salt), moodle)

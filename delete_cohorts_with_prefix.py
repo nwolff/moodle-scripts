@@ -8,13 +8,12 @@ Uses the Moodle API
 """
 
 import argparse
-import os
 import sys
 
-import dotenv
 import structlog
 
-from lib.moodle_api import URL, MoodleClient
+from lib.config import get_moodle_client
+from lib.moodle_api import MoodleClient
 
 log = structlog.get_logger()
 
@@ -63,11 +62,6 @@ if __name__ == "__main__":
     parser.add_argument("prefix")
     args = parser.parse_args()
 
-    dotenv.load_dotenv()
-    token = os.getenv("TOKEN")
-    if not token:
-        sys.exit("Missing environment variable 'TOKEN'")
-    log.info("connecting", url=URL, token=token)
-    moodle = MoodleClient(URL, token)
+    moodle = get_moodle_client()
 
     delete_moodle_cohorts_with_prefix(moodle, args.prefix)

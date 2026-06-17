@@ -10,51 +10,24 @@ Uses the Moodle API
 """
 
 import argparse
-import os
-import sys
 
-import dotenv
 import polars as pl
 import structlog
 
-from lib.moodle_api import URL, MoodleClient
+from lib.cohort import fetch_cohort_member_emails, report_email_diff
+from lib.config import get_moodle_client
+from lib.moodle_api import MoodleClient
 
 log = structlog.get_logger()
 
 
 def diff_students(moodle: MoodleClient, yearly_cohort_id: str, src: pl.DataFrame):
-    response = moodle(
-        "core_cohort_get_cohort_members",
-        cohortids=[yearly_cohort_id],
-    )
-    existing_students_ids = response[0].userids
-
-    log.info(
-        "got student ids for cohort",
-        cohort_id=yearly_cohort_id,
-        student_count=len(existing_students_ids),
-    )
-
-    log.info("retrieving students info...", student_id_count=len(existing_students_ids))
-    response = moodle(
-        "core_user_get_users_by_field", field="id", values=existing_students_ids
-    )
-
-    log.info("got student info", student_info_count=len(response))
-
-    existing = {s.email for s in response}
-
-    log.info("unique emails", count=len(existing))
+    existing = fetch_cohort_member_emails(moodle, yearly_cohort_id)
 
     wanted = set(src["email"])
     log.info("wanted students", count=len(wanted))
 
-    # We just display these, in case the user wants to remove them
-    extra = sorted(existing - wanted)
-    log.info("in moodle but not in file", count=len(extra), students=extra)
-
-    missing = sorted(wanted - existing)
-    log.info("in file but not in moodle", count=len(missing), students=missing)
+    report_email_diff(existing, wanted)
 
 
 if __name__ == "__main__":
@@ -64,13 +37,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    dotenv.load_dotenv()
-    token = os.getenv("TOKEN")
-    if not token:
-        sys.exit("Missing environment variable 'TOKEN'")
-
     wanted = pl.read_csv(args.students_csv)
 
-    log.debug("connecting", url=URL, token=token)
-    moodle = MoodleClient(URL, token)
+    moodle = get_moodle_client()
     diff_students(moodle, args.yearly_cohort_id, wanted)

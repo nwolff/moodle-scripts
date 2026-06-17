@@ -13,6 +13,7 @@ https://docs.astral.sh/uv/getting-started/installation/
     uv run mypy .
     uv run ruff check --fix
     uv run ruff format
+    uv run pytest
 
 ## Running
 

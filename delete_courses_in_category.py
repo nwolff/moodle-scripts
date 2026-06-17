@@ -13,14 +13,12 @@ Uses the Moodle API
 """
 
 import argparse
-import os
-import sys
 
-import dotenv
 import progressbar
 import structlog
 
-from lib.moodle_api import URL, MoodleClient
+from lib.config import get_moodle_client
+from lib.moodle_api import MoodleClient
 
 log = structlog.get_logger()
 
@@ -64,8 +62,7 @@ def delete_moodle_courses(moodle: MoodleClient, category_id: str):
     # time. This is because we are weary of the php script time limit.
     for course in progressbar.progressbar(courses_to_delete):
         log.info("deleting course", course=course.shortname)
-        result = moodle("core_course_delete_courses", courseids=[course.id])
-        print(result)  # XXX
+        moodle("core_course_delete_courses", courseids=[course.id])
 
 
 if __name__ == "__main__":
@@ -78,11 +75,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    dotenv.load_dotenv()
-    token = os.getenv("TOKEN")
-    if not token:
-        sys.exit("Missing environment variable 'TOKEN'")
-    log.info("connecting", url=URL, token=token)
-    moodle = MoodleClient(URL, token)
+    moodle = get_moodle_client()
 
     delete_moodle_courses(moodle, args.category_id)

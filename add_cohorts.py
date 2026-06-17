@@ -15,14 +15,13 @@ admin page choked as soon as a cohort in the file already existed in Moodle.
 """
 
 import argparse
-import os
 import sys
 
-import dotenv
 import polars as pl
 import structlog
 
-from lib.moodle_api import URL, MoodleClient
+from lib.config import get_moodle_client
+from lib.moodle_api import MoodleClient
 from preprocess_teachers_and_courses import COURSE_COHORT
 
 log = structlog.get_logger()
@@ -78,13 +77,7 @@ if __name__ == "__main__":
     parser.add_argument("preprocessed")
     args = parser.parse_args()
 
-    dotenv.load_dotenv()
-    token = os.getenv("TOKEN")
-    if not token:
-        sys.exit("Missing environment variable 'TOKEN'")
-
-    log.info("connecting", url=URL, token=token)
-    moodle = MoodleClient(URL, token)
+    moodle = get_moodle_client()
 
     preprocessed = pl.read_csv(args.preprocessed)
     add_cohorts(moodle, args.course_category_id, preprocessed)

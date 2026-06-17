@@ -6,14 +6,12 @@ ready for importing into Moodle : Admin->Utilisateurs->Importation d'utilisateur
 """
 
 import argparse
-import os
-import sys
 from collections.abc import Callable
 
-import dotenv
 import polars as pl
 import structlog
 
+from lib.config import get_salt
 from lib.passwords import password_generator
 from preprocess_teachers_and_courses import (
     COURSE_SHORTNAME,
@@ -94,10 +92,7 @@ if __name__ == "__main__":
     parser.add_argument("output")
     args = parser.parse_args()
 
-    dotenv.load_dotenv()
-    salt = os.getenv("SALT")
-    if not salt:
-        sys.exit("Missing environment variable 'SALT'")
+    salt = get_salt()
 
     preprocessed = pl.read_csv(args.preprocessed)
     teachers_with_courses = to_teachers_with_courses(
